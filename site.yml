@@ -16,7 +16,22 @@
         state: present
       when: ansible_facts['os_family'] == "Debian"
     
+    - name: Initialize Go module and download dependencies
+      shell: |
+        cd /home/ubuntu/backend
+        go mod download
+        go mod tidy
+      environment:
+        GOPATH: /home/ubuntu/go
+        GOMODCACHE: /home/ubuntu/go/pkg/mod
+
     - name: Start backend Go application
-      command: /usr/bin/go run "{{project_dir}}"/backend.go
+      command: /usr/bin/go run /home/ubuntu/backend/backend.go
+      args:
+        chdir: /home/ubuntu/backend
+      environment:
+        GOPATH: /home/ubuntu/go
+        GOMODCACHE: /home/ubuntu/go/pkg/mod
+
 
 
