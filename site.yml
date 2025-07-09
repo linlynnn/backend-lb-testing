@@ -1,15 +1,45 @@
-- name: setup backend for testing loadbalancer
-  hosts: localhost
+- name: Install Go on target machines
+  hosts: all
   become: yes
   vars:
+    go_version: "1.22.0"
+    go_download_url: "https://go.dev/dl/go{{ go_version }}.linux-amd64.tar.gz"
+    go_install_dir: "/usr/local"
+    go_tarball: "/tmp/go{{ go_version }}.linux-amd64.tar.gz"
     project_dir: "/home/ubuntu/backend"
 
   tasks:
-    - name: Install GO
-      apt:
-        name: golang-go
-        state: present
-        
+
+    - name: Download Go tarball
+      get_url:
+        url: "{{ go_download_url }}"
+        dest: "{{ go_tarball }}"
+        mode: '0644'
+
+    - name: Remove any existing Go installation
+      file:
+        path: "{{ go_install_dir }}/go"
+        state: absent
+
+    - name: Extract Go tarball
+      unarchive:
+        src: "{{ go_tarball }}"
+        dest: "{{ go_install_dir }}"
+        remote_src: yes
+
+    - name: Ensure Go binary is in PATH
+      copy:
+        dest: /etc/profile.d/go.sh
+        content: |
+          export PATH=$PATH:/usr/local/go/bin
+      mode: '0755'
+
+    - name: Source Go profile script (only applies to current shell session)
+      shell: source /etc/profile.d/go.sh
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
     - name: Install stress-ng on Debian/Ubuntu
       ansible.builtin.apt:
         name: stress-ng
@@ -26,7 +56,7 @@
         GOMODCACHE: /home/ubuntu/go/pkg/mod
 
     - name: Start backend Go application
-      command: /usr/bin/go run /home/ubuntu/backend/backend.go
+      command: /usr/local/bin/go run /home/ubuntu/backend/backend.go
       args:
         chdir: /home/ubuntu/backend
       environment:
