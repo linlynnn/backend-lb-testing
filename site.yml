@@ -1,0 +1,22 @@
+- name: setup backend for testing loadbalancer
+  hosts: localhost
+  become: yes
+  vars:
+    project_dir: "/home/ubuntu/backend"
+
+  tasks:
+    - name: Install GO
+      apt:
+        name: golang-go
+        state: present
+        
+    - name: Install stress-ng on Debian/Ubuntu
+      ansible.builtin.apt:
+        name: stress-ng
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+    
+    - name: Start backend Go application
+      command: /usr/bin/go run "{{project_dir}}"/backend.go
+
+
