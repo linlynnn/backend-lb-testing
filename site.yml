@@ -1,5 +1,5 @@
 - name: Install Go on target machines
-  hosts: all
+  hosts: localhost
   become: yes
   vars:
     go_version: "1.22.0"
@@ -32,7 +32,7 @@
         dest: /etc/profile.d/go.sh
         content: |
           export PATH=$PATH:/usr/local/go/bin
-      mode: '0755'
+        mode: '0755'
 
     - name: Source Go profile script (only applies to current shell session)
       shell: source /etc/profile.d/go.sh
