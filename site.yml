@@ -1,3 +1,60 @@
+- name: Install and configure node_exporter
+  hosts: localhost
+  become: yes
+  vars:
+    node_exporter_version: "1.8.1"
+    node_exporter_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    node_exporter_tar: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+    node_exporter_dir: "/opt/node_exporter"
+    node_exporter_binary: "/usr/local/bin/node_exporter"
+
+  tasks:
+
+    - name: Download node_exporter tarball
+      get_url:
+        url: "{{ node_exporter_url }}"
+        dest: "{{ node_exporter_tar }}"
+        mode: '0644'
+
+    - name: Extract node_exporter
+      unarchive:
+        src: "{{ node_exporter_tar }}"
+        dest: "/tmp"
+        remote_src: yes
+
+    - name: Copy node_exporter binary
+      copy:
+        src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+        dest: "{{ node_exporter_binary }}"
+        mode: '0755'
+
+    - name: Create node_exporter systemd service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=nobody
+          ExecStart={{ node_exporter_binary }}
+
+          [Install]
+          WantedBy=default.target
+        mode: '0644'
+
+    - name: Reload systemd to apply new service
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start node_exporter service
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
 - name: Install Go on target machines
   hosts: localhost
   become: yes
