@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,6 +12,26 @@ import (
 
 	"github.com/go-chi/chi"
 )
+
+func getEns2IP() string {
+	iface, err := net.InterfaceByName("ens2")
+	if err != nil {
+		return "unknown"
+	}
+
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return "unknown"
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && ipNet.IP.To4() != nil {
+			return ipNet.IP.String()
+		}
+	}
+
+	return "unknown"
+}
 
 type LoadCpuUtilRequest struct {
 	Cores   int `json:"cores"`
@@ -27,7 +48,8 @@ func main() {
 	r := chi.NewMux()
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Response from backend %s\n", port)
+		ip := getEns2IP()
+		fmt.Fprintf(w, "Response from backend (IP: %s)\n", ip)
 	})
 
 	r.Post("/load/cpu", func(w http.ResponseWriter, r *http.Request) {
